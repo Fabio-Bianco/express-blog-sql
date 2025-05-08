@@ -1,3 +1,5 @@
+require('dotenv').config();
+require('./config/db');
 const express = require("express"); // Importa il modulo Express
 const app = express();              // Crea un'applicazione Express
 const port = 4000;                  // Imposta la porta su cui il server sarà in ascolto
