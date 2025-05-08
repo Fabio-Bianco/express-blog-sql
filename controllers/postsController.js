@@ -1,41 +1,41 @@
-const posts = require('../data/posts');
+// controllers/postsController.js
 
-//
-// INDEX – restituisce tutti i post, con filtro opzionale per tag (?tag=...)
-//
-function index(req, res) {
-  let tags = req.query.tag;
+// Importa la funzione getAllPosts dal model
+const { getAllPosts } = require('../models/postModel');
 
-  if (tags) {
-    if (!Array.isArray(tags)) {
+/**
+ * INDEX – Recupera tutti i post dal database,
+ * con supporto per filtro opzionale via query string ?tag=...
+ */
+async function index(req, res) {
+  try {
+    // Recupera i tag dalla query string, può essere un singolo tag o un array
+    let tags = req.query.tag;
+
+    // Normalizza: se è un singolo tag, lo trasformiamo in array
+    if (tags && !Array.isArray(tags)) {
       tags = [tags];
     }
 
-    const tagList = tags.map(tag => tag.toLowerCase());
+    // Otteniamo i post dal DB tramite il model
+    const posts = await getAllPosts(tags);
 
-    const filteredPosts = posts.filter(post =>
-      post.tags.some(tag => tagList.includes(tag.toLowerCase()))
-    );
-
-    console.log(` Post filtrati per tag [${tagList.join(', ')}]:`, filteredPosts);
-
-    return res.json({
-      message: `Post trovati con i tag: ${tagList.join(', ')}`,
-      results: filteredPosts
+    // Risposta JSON: messaggio + risultati
+    return res.status(200).json({
+      message: tags
+        ? `Filtered posts by tags: ${tags.join(', ')}`
+        : 'All posts retrieved',
+      results: posts
     });
+  } catch (err) {
+    console.error('❌ Error fetching posts from DB:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-
-  console.log(' Nessun filtro applicato, restituisco tutti i post:', posts);
-
-  return res.json({
-    message: 'Tutti i post disponibili',
-    results: posts
-  });
 }
 
-//
-// SHOW – restituisce un post specifico per ID
-//
+// Le altre funzioni (show, create, update, etc.) sono ancora basate sull'array locale
+// Le aggiorneremo nelle prossime milestone
+
 function show(req, res) {
   const id = parseInt(req.params.id);
   const post = posts.find(p => p.id === id);
@@ -53,14 +53,9 @@ function show(req, res) {
   });
 }
 
-//
-// CREATE – crea un nuovo post
-//
 function create(req, res) {
-  // Calcolo nuovo ID in modo didattico (incrementando l’ultimo ID esistente)
   const newId = posts.length > 0 ? Math.max(...posts.map(p => p.id)) + 1 : 1;
 
-  // Validazione: controlla che i campi obbligatori siano presenti
   if (!req.body.title || !req.body.content) {
     return res.status(400).json({ error: 'Titolo e contenuto sono obbligatori' });
   }
@@ -78,15 +73,12 @@ function create(req, res) {
   console.log(' Nuovo post creato:', newPost);
   console.log(' Lista aggiornata:', posts);
 
-   res.status(201).json({
+  res.status(201).json({
     message: 'Post creato con successo',
     post: newPost
   });
 }
 
-//
-// UPDATE – modifica completa di un post (PUT)
-//
 function update(req, res) {
   const id = parseInt(req.params.id);
   const index = posts.findIndex(p => p.id === id);
@@ -116,9 +108,6 @@ function update(req, res) {
   });
 }
 
-//
-// MODIFY – modifica parziale di un post (PATCH)
-//
 function modify(req, res) {
   const id = parseInt(req.params.id);
   const post = posts.find(p => p.id === id);
@@ -142,9 +131,6 @@ function modify(req, res) {
   });
 }
 
-//
-// DESTROY – elimina un post
-//
 function remove(req, res) {
   const id = parseInt(req.params.id);
   const index = posts.findIndex(post => post.id === id);
