@@ -34,7 +34,13 @@ async function getAllPosts(tags) {
       tags: post.tags ? post.tags.split(',') : []
     }));
   }
+
+  async function deletePostById(id) {
+    const [result] = await db.query('DELETE FROM posts WHERE id = ?', [id]);
+    return result.affectedRows > 0;
+  }
   
 module.exports = {
-  getAllPosts
+  getAllPosts,
+  deletePostById
 };

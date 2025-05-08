@@ -131,25 +131,30 @@ function modify(req, res) {
   });
 }
 
-function remove(req, res) {
+const { deletePostById } = require('../models/postModel');
+
+/**
+ * DESTROY – Elimina un post dal database tramite ID
+ */
+async function remove(req, res) {
   const id = parseInt(req.params.id);
-  const index = posts.findIndex(post => post.id === id);
 
-  if (index === -1) {
-    console.log(`Tentativo di eliminazione fallito: post con ID ${id} non trovato.`);
-    return res.status(404).json({ error: 'Post non trovato' });
+  try {
+    const deleted = await deletePostById(id);
+
+    if (!deleted) {
+      console.log(`❌ Post with ID ${id} not found.`);
+      return res.status(404).json({ error: 'Post not found' });
+    }
+
+    console.log(`🗑️ Post with ID ${id} successfully deleted.`);
+    return res.status(204).send(); // No Content
+  } catch (err) {
+    console.error('🔥 Error deleting post:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-
-  const deletedPost = posts.splice(index, 1)[0];
-
-  console.log(` Post con ID ${id} eliminato con successo.`);
-  console.log(' Lista aggiornata:', posts);
-
-  return res.status(200).json({
-    message: `Post con ID ${id} eliminato con successo`,
-    post: deletedPost
-  });
 }
+
 
 module.exports = {
   index,
